@@ -35,7 +35,6 @@
 
 #include "fp_tcp.h"
 #include "fp_mtu.h"
-#include "fp_http.h"
 
 u64 packet_cnt;                         /* Total number of packets processed  */
 
@@ -823,9 +822,6 @@ static void destroy_host(struct host_data* h) {
   ck_free(h->last_syn);
   ck_free(h->last_synack);
 
-  ck_free(h->http_resp);
-  ck_free(h->http_req_os);
-
   ck_free(h);
 
   host_cnt--;
@@ -898,7 +894,6 @@ static struct host_data* create_host(u8* addr, u8 ip_ver) {
   nh->last_up_min     = -1;
   nh->last_class_id   = -1;
   nh->last_name_id    = -1;
-  nh->http_name_id    = -1;
   nh->distance        = -1;
 
   host_cnt++;
@@ -981,8 +976,6 @@ static void destroy_flow(struct packet_flow* f) {
 
   f->client->use_cnt--;
   f->server->use_cnt--;
-
-  free_sig_hdrs(&f->http_tmp);
 
   ck_free(f->request);
   ck_free(f->response);
@@ -1154,7 +1147,6 @@ static void flow_dispatch(struct packet_data* pk) {
   struct packet_flow* f;
   struct tcp_sig* tsig;
   u8 to_srv = 0;
-  u8 need_more = 0;
 
   DEBUG("[#] Received TCP packet: %s/%u -> ",
         addr_to_str(pk->src, pk->ip_ver), pk->sport);
@@ -1367,19 +1359,8 @@ static void flow_dispatch(struct packet_data* pk) {
 
       if (!pk->pay_len) return;
 
-      need_more |= process_http(to_srv, f);
-
-      if (!need_more) {
-
-        DEBUG("[#] All modules done, no need to keep tracking flow.\n");
-        destroy_flow(f);
-
-      } else if (f->req_len >= MAX_FLOW_DATA && f->resp_len >= MAX_FLOW_DATA) {
-
-        DEBUG("[#] Per-flow capture size limit exceeded.\n");
-        destroy_flow(f);
-
-      }
+      DEBUG("[#] All modules done, no need to keep tracking flow.\n");
+      destroy_flow(f);
 
       break;
 
@@ -1466,10 +1447,7 @@ void add_nat_score(u8 to_srv, struct packet_flow* f, u16 reason, u8 score) {
   if (reason & NAT_MSS)      REAF(" mtu");
   if (reason & NAT_FUZZY)    REAF(" fuzzy");
 
-  if (reason & NAT_APP_VIA)  REAF(" via");
-  if (reason & NAT_APP_DATE) REAF(" date");
   if (reason & NAT_APP_LB)   REAF(" srv_sig_lb");
-  if (reason & NAT_APP_UA)   REAF(" ua_vs_os");
 
 #undef REAF
 

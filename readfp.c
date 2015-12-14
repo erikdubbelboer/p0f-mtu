@@ -28,7 +28,6 @@
 #include "alloc-inl.h"
 #include "fp_tcp.h"
 #include "fp_mtu.h"
-#include "fp_http.h"
 #include "readfp.h"
 
 static u32 sig_cnt;                     /* Total number of p0f.fp sigs        */
@@ -266,10 +265,6 @@ static void config_parse_line(u8* line) {
 
       mod_type = CF_MOD_TCP;
 
-    } else if (!strcmp((char*)line, "http")) {
-
-      mod_type = CF_MOD_HTTP;
-
     } else {
 
       FATAL("Unrecognized fingerprinting module '%s' in line %u.", line, line_no);
@@ -318,13 +313,6 @@ static void config_parse_line(u8* line) {
 
     config_parse_classes(val);
 
-  } else if (!strcmp((char*)line, "ua_os")) {
-
-    if (state != CF_NEED_LABEL || mod_to_srv != 1 || mod_type != CF_MOD_HTTP) 
-      FATAL("misplaced 'us_os' in line %u.", line_no);
-
-    http_parse_ua(val, line_no);
-
   } else if (!strcmp((char*)line, "label")) {
 
     /* We will drop sig_sys / sig_flavor on the floor if no signatures
@@ -360,11 +348,6 @@ static void config_parse_line(u8* line) {
 
       case CF_MOD_MTU:
         mtu_register_sig(sig_flavor, val, line_no);
-        break;
-
-      case CF_MOD_HTTP:
-        http_register_sig(mod_to_srv, generic, sig_class, sig_name, sig_flavor,
-                          label_id, cur_sys, cur_sys_cnt, val, line_no);
         break;
 
     }

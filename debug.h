@@ -15,13 +15,14 @@
 #include "config.h"
 
 #ifdef DEBUG_BUILD
-#  define DEBUG(x...) fprintf(stderr, x)
+#  define ERRORF(x...)  fprintf(stderr, x)
+#  define SAYF(x...)    printf(x)
+#  define DEBUG(x...)   fprintf(stderr, x)
 #else
-#  define DEBUG(x...) do {} while (0)
+#  define ERRORF(x...)  do {} while (0)
+#  define SAYF(x...)    do {} while (0)
+#  define DEBUG(x...)   do {} while (0)
 #endif /* ^DEBUG_BUILD */
-
-#define ERRORF(x...)  fprintf(stderr, x)
-#define SAYF(x...)    printf(x)
 
 #define WARN(x...) do { \
     ERRORF("[!] WARNING: " x); \

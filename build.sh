@@ -31,7 +31,7 @@ else
   USE_LIBS="-lpcap $LIBS"
 fi
 
-OBJFILES="api.c process.c fp_tcp.c fp_mtu.c fp_http.c readfp.c"
+OBJFILES="api.c process.c fp_tcp.c fp_mtu.c readfp.c"
 
 echo "Welcome to the build script for $PROGNAME $VERSION!"
 echo "Copyright (C) 2012 by Michal Zalewski <lcamtuf@coredump.cx>"
@@ -89,7 +89,7 @@ elif [ "$1" = "debug" ]; then
   echo "[+] Configuring debug build."
   BASIC_CFLAGS="$BASIC_CFLAGS -DDEBUG_BUILD=1"
   USE_CFLAGS="$USE_CFLAGS -DDEBUG_BUILD=1"
-  
+
 else
 
   echo "[-] Unrecognized build target '$1', sorry."

@@ -98,13 +98,6 @@ ordering of TCP options, the relation between maximum segment size and window
 size, the progression of TCP timestamps, and the state of about a dozen possible
 implementation quirks (e.g. non-zero values in "must be zero" fields).
 
-The metrics used for application-level traffic vary from one module to another;
-where possible, the tool relies on signals such as the ordering or syntax of
-HTTP headers or SMTP commands, rather than any declarative statements such as
-User-Agent. Application-level fingerprinting modules currently support HTTP.
-Before the tool leaves "beta", I want to add SMTP and FTP. Other protocols,
-such as FTP, POP3, IMAP, SSH, and SSL, may follow.
-
 The list of all the measured parameters is reviewed in section 5 later on.
 Some of the analysis also happens on a higher level: inconsistencies in the
 data collected from various sources, or in the data from the same source
@@ -337,13 +330,6 @@ To such a query, p0f responds with:
 
     [2]  distance    - system distance (derived from TTL; -1 if no data).
 
-    [1]  bad_sw      - p0f thinks the User-Agent or Server strings aren't
-                       accurate. The value of 1 means OS difference (possibly
-                       due to proxying), while 2 means an outright mismatch.
-
-                       NOTE: If User-Agent is not present at all, this value
-                       stays at 0.
-
     [1]  os_match_q  - OS match quality: 0 for a normal match; 1 for fuzzy
                        (e.g., TTL or DF difference); 2 for a generic signature;
                        and 3 for both.
@@ -357,14 +343,9 @@ To such a query, p0f responds with:
 
     [32] os_flavor   - OS version. May be empty if no data.
 
-    [32] http_name   - most recent positively identified HTTP application
-                       (e.g. 'Firefox').
-
-    [32] http_flavor - version of the HTTP application, if any.
+    [16] link_mtu    - network link MTU
 
     [32] link_type   - network link type, if recognized.
-
-    [32] language    - system language, if recognized.
 
 A simple reference implementation of an API client is provided in p0f-client.c.
 Implementations in C / C++ may reuse api.h from p0f source code, too.
@@ -632,95 +613,6 @@ system, and p0f will provide you with the necessary data. To gather SYN+ACK
 ('response') signatures, you should use the bundled p0f-sendsyn utility while p0f
 is running in the background; creating them manually is not advisable.
 
-== HTTP signatures ==
-
-A special directive should appear at the beginning of the [http:request]
-section, structured the following way:
-
-ua_os = Linux,Windows,iOS=[iPad],iOS=[iPhone],Mac OS X,...
-
-This list should specify OS names that should be looked for within the
-User-Agent string if the string is otherwise deemed to be honest. This input
-is not used for fingerprinting, but aids NAT detection in some useful ways.
-
-The names have to match the names used in 'sig' specifiers across p0f.fp. If a
-particular name used by p0f differs from what typically appears in User-Agent,
-the name=[string] syntax may be used to define any number of aliases.
-
-Other than that, HTTP signatures for GET and HEAD requests have the following
-layout:
-
-sig = ver:horder:habsent:expsw
-
-  ver        - 0 for HTTP/1.0, 1 for HTTP/1.1, or '*' for any. 
-
-               NEW SIGNATURES: Copy the value literally, unless you have a
-               specific reason to do otherwise.
-
-  horder     - comma-separated, ordered list of headers that should appear in
-               matching traffic. Substrings to match within each of these
-               headers may be specified using a name=[value] notation.
-
-               The signature will be matched even if other headers appear in
-               between, as long as the list itself is matched in the specified
-               sequence.
-
-               Headers that usually do appear in the traffic, but may go away
-               (e.g. Accept-Language if the user has no languages defined, or
-               Referer if no referring site exists) should be prefixed with '?',
-               e.g. "?Referer". P0f will accept their disappearance, but will
-               not allow them to appear at any other location.
-
-               NEW SIGNATURES: Review the list and remove any headers that
-               appear to be irrelevant to the fingerprinted software, and mark
-               transient ones with '?'. Remove header values that do not add
-               anything to the signature, or are request- or user-specific.
-               In particular, pay attention to Accept, Accept-Language, and
-               Accept-Charset, as they are highly specific to request type
-               and user settings.
-
-               P0f automatically removes some headers, prefixes others with '?',
-               and inhibits the value of fields such as 'Referer' or 'Cookie' -
-               but this is not a substitute for manual review.
-
-               NOTE: Server signatures may differ depending on the request
-               (HTTP/1.1 versus 1.0, keep-alive versus one-shot, etc) and on the
-               returned resource (e.g., CGI versus static content). Play around,
-               browse to several URLs, also try curl and wget.
-
-  habsent    - comma-separated list of headers that must *not* appear in
-               matching traffic. This is particularly useful for noting the
-               absence of standard headers (e.g. 'Host'), or for differentiating
-               between otherwise very similar signatures.
-
-               NEW SIGNATURES: P0f will automatically highlight the absence of
-               any normally present headers; other entries may be added where
-               necessary.
-
-  expsw      - expected substring in 'User-Agent' or 'Server'. This is not
-               used to match traffic, and merely serves to detect dishonest
-               software. If you want to explicitly match User-Agent, you need
-               to do this in the 'horder' section, e.g.:
-
-               User-Agent=[Firefox]
-
-Any of these sections sections except for 'ver' may be blank.
-
-There are many protocol-level quirks that p0f could be detecting - for example,
-the use of non-standard newlines, or missing or extra spacing between header
-field names and values. There is also some information to be gathered from
-responses to OPTIONS or POST. That said, it does not seem to be worth the
-effort: the protocol is so verbose, and implemented so arbitrarily, that we are
-getting more than enough information just with a simple GET / HEAD fingerprint.
-
-== SMTP signatures ==
-
-   *** NOT IMPLEMENTED YET ***
-
-== FTP signatures ==
-
-   *** NOT IMPLEMENTED YET ***
-
 ----------------
 6. NAT detection
 ----------------
@@ -737,15 +629,9 @@ or other one-off events); and a persistent pattern of changes prompts an
 
 All of these messages are accompanied by a set of reason codes:
 
-  os_sig       - the OS detected right now doesn't match the OS detected earlier
-                 on.
-
   sig_diff     - no definite OS detection data available, but protocol-level
                  characteristics have changed drastically (e.g., different
                  TCP option layout).
-
-  app_vs_os    - the application detected running on the host is not supposed
-                 to work on the host's operating system.
 
   x_known      - the signature progressed from known to unknown, or vice versa.
 
@@ -761,18 +647,6 @@ The following additional codes are specific to TCP:
 
   fuzzy        - the precision with which a TCP signature is matched has
                  changed.
-
-The following code is also issued by the HTTP module:
-
-  via          - data explicitly includes Via / X-Forwarded-For.
-
-  us_vs_os     - OS fingerprint doesn't match User-Agent data, and the
-                 User-Agent value otherwise looks honest.
-
-  app_srv_lb   - server application signatures change, suggesting load
-                 balancing.
-
-  date         - server-advertised date changes inconsistently.
 
 Different reasons have different weights, balanced to keep p0f very sensitive
 even to very homogenous environments behind NAT. If you end up seeing false

@@ -78,25 +78,11 @@ void handle_query(struct p0f_api_query* q, struct p0f_api_response* r) {
 
   }
 
-  if (h->http_name_id != -1) {
-
-    strncpy((char*)r->http_name, (char*)fp_os_names[h->http_name_id],
-            P0F_STR_MAX + 1);
-
-    if (h->http_flavor)
-      strncpy((char*)r->http_flavor, (char*)h->http_flavor, P0F_STR_MAX + 1);
-
-  }
-
   r->link_mtu = h->link_mtu;
 
   if (h->link_type)
     strncpy((char*)r->link_type, (char*)h->link_type, P0F_STR_MAX + 1);
 
-  if (h->language)
-    strncpy((char*)r->language, (char*)h->language, P0F_STR_MAX + 1);
-
-  r->bad_sw      = h->bad_sw;
   r->last_nat    = h->last_nat;
   r->last_chg    = h->last_chg;
   r->up_mod_days = h->up_mod_days;

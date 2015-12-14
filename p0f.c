@@ -49,7 +49,6 @@
 #include "readfp.h"
 #include "api.h"
 #include "tcp.h"
-#include "fp_http.h"
 #include "p0f.h"
 
 #ifndef PF_INET6
@@ -309,7 +308,7 @@ static void open_api(void) {
 void start_observation(char* keyword, u8 field_cnt, u8 to_srv,
                        struct packet_flow* f) {
 
-  if (obs_fields) FATAL("Premature end of observation.");
+  if (obs_fields) FATAL("Premature end of observation. ('%s')", keyword);
 
   if (!daemon_mode) {
 
@@ -1200,8 +1199,6 @@ int main(int argc, char** argv) {
   close_spare_fds();
 
   get_hash_seed();
-
-  http_init();
 
   read_config(fp_file ? fp_file : (u8*)FP_FILE);
 

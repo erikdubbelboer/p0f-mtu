@@ -15,7 +15,6 @@
 
 #include "types.h"
 #include "fp_tcp.h"
-#include "fp_http.h"
 
 /* Parsed information handed over by the pcap callback: */
 
@@ -122,20 +121,6 @@ struct host_data {
   s32 last_up_min;                      /* Last computed uptime (-1 = none)   */
   u32 up_mod_days;                      /* Uptime modulo (days)               */
 
-  /* HTTP business: */
-
-  struct http_sig* http_req_os;         /* Last request, if class != -1       */
-  struct http_sig* http_resp;           /* Last response                      */
-
-  s32 http_name_id;                     /* Client name ID (-1 = not found)    */
-  u8* http_flavor;                      /* Client flavor                      */
-
-  u8* language;                         /* Detected language                  */
-
-  u8  bad_sw;                           /* Used dishonest U-A or Server?      */
-
-  u16 http_resp_port;                   /* Port on which response seen        */
-
 };
 
 /* Reasons for NAT detection: */
@@ -151,9 +136,6 @@ struct host_data {
 #define NAT_MSS              0x0100     /* MSS changes                        */
 
 #define NAT_APP_LB           0x0200     /* Server signature changes           */
-#define NAT_APP_VIA          0x0400     /* Via / X-Forwarded-For seen         */
-#define NAT_APP_DATE         0x0800     /* Date changes in a weird way        */
-#define NAT_APP_UA           0x1000     /* User-Agent OS inconsistency        */
 
 /* TCP flow record, maintained until all fingerprinting modules are happy: */
 
@@ -185,16 +167,6 @@ struct packet_flow {
   u16 syn_mss;                          /* MSS on SYN packet                  */
 
   u32 created;                          /* Flow creation date (unix time)     */
-
-  /* Application-level fingerprinting: */
-
-  s8  in_http;                          /* 0 = tbd, 1 = yes, -1 = no          */
-
-  u8  http_req_done;                    /* Done collecting req headers?       */
-  u32 http_pos;                         /* Current parsing offset             */
-  u8  http_gotresp1;                    /* Got initial line of a response?    */
-
-  struct http_sig http_tmp;             /* Temporary signature                */
 
 };
 

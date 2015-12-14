@@ -55,19 +55,13 @@ struct p0f_api_response {
 
   s16 distance;                         /* System distance                    */
 
-  u8  bad_sw;                           /* Host is lying about U-A / Server   */
   u8  os_match_q;                       /* Match quality                      */
 
   u8  os_name[P0F_STR_MAX + 1];         /* Name of detected OS                */
   u8  os_flavor[P0F_STR_MAX + 1];       /* Flavor of detected OS              */
 
-  u8  http_name[P0F_STR_MAX + 1];       /* Name of detected HTTP app          */
-  u8  http_flavor[P0F_STR_MAX + 1];     /* Flavor of detected HTTP app        */
-
   u16 link_mtu;                         /* Link MTU value                     */
   u8  link_type[P0F_STR_MAX + 1];       /* Link type                          */
-
-  u8  language[P0F_STR_MAX + 1];        /* Language                           */
 
 } __attribute__((packed));
 
